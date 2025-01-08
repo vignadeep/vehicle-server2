@@ -1,11 +1,23 @@
-FROM node:10-alpine
+FROM node:16-alpine AS build
 
-USER node
+WORKDIR /app
+
+COPY package*.json .
 
 RUN npm install
 
-COPY --chown=node:node . .
+COPY . .
 
-EXPOSE 8080
+RUN npm run build
 
-CMD [ "npx", "ts-node", "main.ts" ]
+FROM node:16-alpine AS production
+
+WORKDIR /app
+
+COPY package*.json .
+
+RUN npm ci --only=production
+
+COPY --from=build /app/dist ./dist
+
+CMD ["node", "dist/main.js"]
